@@ -62,15 +62,47 @@ else
     pip3 install pyyaml
 fi
 
+# Install JSON library for C++
+if [ -f /usr/include/nlohmann/json.hpp ]; then
+    echo "JSON library for C++ is already installed."
+else
+    echo "Downloading JSON library from GitHub..."
+    git clone https://github.com/nlohmann/json.git
+    if [ -f json/single_include/nlohmann/json.hpp ]; then
+        echo "Copying header file to /usr/include/nlohmann/"
+        sudo mkdir -p /usr/include/nlohmann
+        sudo cp json/single_include/nlohmann/json.hpp /usr/include/nlohmann/
+        rm -rf json
+        echo "JSON library installed from GitHub."
+    else
+        echo "Failed to download JSON library from GitHub."
+    fi
+fi
+
+# Install ZMQ library for C++
+if [ -f /usr/include/zmq.h ]; then
+    echo "ZMQ library for C++ is already installed."
+else
+    echo "Installing ZMQ library for C++..."
+    sudo apt install libzmq3-dev -y
+fi
+
+# Install ZMQ library for Python
+if python3 -c "import zmq" >/dev/null 2>&1; then
+    echo "ZMQ library for Python is already installed."
+else
+    echo "Installing ZMQ library for Python..."
+    pip install pyzmq --break-system-packages
+fi
+
 # Install OpenCV with contrib modules for Python
 if python3 -c "import cv2; print(cv2.getBuildInformation())" | grep -q "contrib" >/dev/null 2>&1; then
     echo "OpenCV with contrib modules is already installed."
 else
     echo "Installing OpenCV with contrib modules for Python..."
     pip install opencv-contrib-python --break-system-packages
-
 fi
 
 echo "All required dependencies have been checked and installed if necessary."
 
-echo "Setup script complete."
+echo "Setup complete."
