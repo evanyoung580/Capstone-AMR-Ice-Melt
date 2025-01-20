@@ -1,0 +1,25 @@
+webcam:
+  cam_index: 0
+  fps: 30
+  size: 
+    width: 640
+    height: 480
+
+image_proc:  
+  debug: true
+  rescale: 2
+  crop:
+    top: 0.5
+    bottom: 1
+  color_detect:
+    bgr_targ: [120, 130, 150]
+    hue_tol: 10
+    sat:
+      max: 255
+      min: 30
+    val:
+      max: 255
+      min: 30
+
+
+  
