@@ -1,0 +1,3 @@
+/home/amrmgr/amr/test/cpp/build/CMakeFiles/local_msgmgr.dir
+/home/amrmgr/amr/test/cpp/build/CMakeFiles/edit_cache.dir
+/home/amrmgr/amr/test/cpp/build/CMakeFiles/rebuild_cache.dir

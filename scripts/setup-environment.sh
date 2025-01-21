@@ -66,17 +66,9 @@ fi
 if [ -f /usr/include/nlohmann/json.hpp ]; then
     echo "JSON library for C++ is already installed."
 else
-    echo "Downloading JSON library from GitHub..."
-    git clone https://github.com/nlohmann/json.git
-    if [ -f json/single_include/nlohmann/json.hpp ]; then
-        echo "Copying header file to /usr/include/nlohmann/"
-        sudo mkdir -p /usr/include/nlohmann
-        sudo cp json/single_include/nlohmann/json.hpp /usr/include/nlohmann/
-        rm -rf json
-        echo "JSON library installed from GitHub."
-    else
-        echo "Failed to download JSON library from GitHub."
-    fi
+    echo "installing JSON library for C++..."
+    sudo apt install nlohmann-json3-dev
+
 fi
 
 # Install ZMQ library for C++

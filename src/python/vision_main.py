@@ -2,19 +2,21 @@ import cv2
 import numpy as np
 import yaml
 import zmq
-import json
+import time
 
 
 class VisionProcessor:
-    def __init__(self, config_path, socket_path):
+    def __init__(self, config_path, telem_socket_path, cmd_socket_path):
         # Load configuration
         with open(config_path, 'r') as config_file:
             self.config = yaml.safe_load(config_file)
         
         # Initialize ZMQ communication
         self.context = zmq.Context()
-        self.socket = self.context.socket(zmq.PAIR)
-        self.socket.connect(socket_path)
+        self.telem_socket = self.context.socket(zmq.PUSH)
+        self.cmd_socket = self.context.socket(zmq.PULL)
+        self.telem_socket.bind(telem_socket_path)
+        self.cmd_socket.connect(cmd_socket_path)
         
         # Initialize webcam
         webcam_index = self.config['webcam']['cam_index']
@@ -87,14 +89,17 @@ class VisionProcessor:
 
     def send_message(self, message):
         """Sends a JSON message via the socket."""
-        self.socket.send_json(message)
         if self.config['image_proc']['debug']:
-            print(message)
+                print(message)
+        try:
+            self.telem_socket.send_json(message, flags=zmq.NOBLOCK)
+        except zmq.Again as e:
+            print(f"Warning: Message sending failed: {e}")
 
     def receive_message(self):
         """Receives a JSON message from the socket and updates detection status."""
-        if self.socket.poll(timeout=10):
-            in_message = self.socket.recv_json(flags=zmq.NOBLOCK)
+        if self.cmd_socket.poll(timeout=10):
+            in_message = self.cmd_socket.recv_json(flags=zmq.NOBLOCK)
             if in_message['manage']['state'] == "detect":
                 self.detect = True
             elif in_message['manage']['state'] == "calibrate":
@@ -105,12 +110,12 @@ class VisionProcessor:
                 self.detect = False
                 self.send_message({"status": "idle"})
 
-
     def cleanup(self):
         """Releases resources."""
         self.cap.release()
         cv2.destroyAllWindows()
-        self.socket.close()
+        self.telem_socket.close()
+        self.cmd_socket.close()
         self.context.term()
 
     def calibrate(self):
@@ -132,7 +137,6 @@ class VisionProcessor:
 
         self.config['image_proc']['clr_detct']['bgr_targ'] = avr_bgr
 
-
         with open('/home/amrmgr/amr/config/opencv_config.yaml', 'w') as write_file:
             yaml.safe_dump(self.config, write_file, default_flow_style=False)
 
@@ -149,7 +153,6 @@ class VisionProcessor:
                     resized_frame, hsv_frame, mask, contours = self.process_frame(frame)
                     out_message = self.analyze_contours(contours, resized_frame)
                     self.send_message(out_message)
-
                     if self.config['image_proc']['debug']:
                         cv2.imshow("Original", frame)
                         cv2.imshow("Cropped", resized_frame)
@@ -158,9 +161,7 @@ class VisionProcessor:
 
                     if cv2.waitKey(1000 // self.config['webcam']['fps']) & 0xFF == ord('q'):
                         break
-
                 self.receive_message()
-
             self.send_message({"status": "stopped"})
 
         finally:
@@ -169,7 +170,8 @@ class VisionProcessor:
 
 if __name__ == "__main__":
     CONFIG_PATH = '/home/amrmgr/amr/config/opencv_config.yaml'
-    SOCKET_PATH = "ipc:///home/amrmgr/amr/tmp/vision_socket"
+    TELEM_SOCKET_PATH = "ipc:///home/amrmgr/amr/tmp/vision_telem"
+    CMD_SOCKET_PATH = "ipc:///home/amrmgr/amr/tmp/vision_cmd"
 
-    vision_processor = VisionProcessor(CONFIG_PATH, SOCKET_PATH)
+    vision_processor = VisionProcessor(CONFIG_PATH, TELEM_SOCKET_PATH, CMD_SOCKET_PATH)
     vision_processor.run()
