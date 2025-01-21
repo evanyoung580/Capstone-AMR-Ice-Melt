@@ -18,14 +18,14 @@ else
         echo "FIFO data_monitor already exists."
     fi
     echo "Opening data monitor terminal..."
-    qterminal -e bash -c "cat data_monitor; exec bash" &
+    qterminal --title "Data Monitor" -e bash -c "cat data_monitor; exec bash" &
 fi
 
 echo "Opening base station manager in a new terminal..."
-qterminal -e bash -c "$MSGMGR; exec bash" &
+qterminal --title "Cmd Manager" -e bash -c "$MSGMGR; exec bash" &
 
 echo "Starting OpenCV vision..."
-python3 $VISION_MAIN &
+qterminal --title "OpenCV Vision" -e bash -c "python3 $VISION_MAIN; exec bash" &
 
 VISION_PID=$!
 MSGMGR_PID=$(pgrep -f "$MSGMGR")

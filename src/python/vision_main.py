@@ -125,7 +125,7 @@ class VisionProcessor:
         if not ret or frame is None:
             print("Error: Unable to read frame from the webcam.")
         
-        resized_frame = self.process_frame(frame)
+        resized_frame, _, _, _ = self.process_frame(frame)
         height, width, _ = resized_frame.shape
         center_size = 50    
         x_start = width // 2 - center_size // 2
@@ -133,14 +133,16 @@ class VisionProcessor:
         y_start = height // 2 - center_size // 2
         y_end = height // 2 + center_size // 2
 
-        center_frame = blurred_frame[y_start:y_end, x_start:x_end]
-        blurred_frame = cv2.Blur(center_frame, (15, 15))
-        avr_bgr = center_frame.mean(axis=(0, 1))
+        center_frame = resized_frame[y_start:y_end, x_start:x_end]
+        blur_cent_frame = cv2.blur(center_frame, (15, 15))
+        avr_bgr = blur_cent_frame.mean(axis=(0, 1))
 
-        self.config['image_proc']['clr_detct']['bgr_targ'] = avr_bgr
+        avr_bgr_list = np.round(avr_bgr).astype(int).tolist()
+
+        self.config['image_proc']['clr_detect']['bgr_targ'] = avr_bgr_list
 
         with open('/home/amrmgr/amr/config/opencv_config.yaml', 'w') as write_file:
-            yaml.safe_dump(self.config, write_file, default_flow_style=False)
+            yaml.safe_dump(self.config, write_file, default_flow_style=True)
 
     def run(self):
         """Main processing loop."""
@@ -154,7 +156,6 @@ class VisionProcessor:
 
                     resized_frame, hsv_frame, mask, contours = self.process_frame(frame)
                     out_message = self.analyze_contours(contours, resized_frame)
-                    self.send_message(out_message)
                     if self.config['image_proc']['debug']:
                         cv2.imshow("Original", frame)
                         cv2.imshow("Cropped", resized_frame)
@@ -163,6 +164,9 @@ class VisionProcessor:
 
                     if cv2.waitKey(1000 // self.config['webcam']['fps']) & 0xFF == ord('q'):
                         break
+                else:
+                    out_message = {"status": "idle"}
+                self.send_message(out_message)
                 self.receive_message()
             self.send_message({"status": "stopped"})
 

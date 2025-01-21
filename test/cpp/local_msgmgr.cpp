@@ -19,21 +19,28 @@ void send_commands(zmq::socket_t &vision_socket)
             if (cmd == "calibrate")
             {
                 out_msg = {
-                    {"manage", "calibrate"},
+                    {"manage", {
+                        {"state", "calibrate"}
+                    }}
                 };
                 std::cout << out_msg.dump(4) << "\n\n";
             }
             else if (cmd == "detect")
             {
                 out_msg = {
-                    {"manage", "detect"},
+                    {"manage", {
+                        {"state", "detect"}
+                    }}
                 };
+
                 std::cout << out_msg.dump(4) << "\n\n";
             }
             else if (cmd == "idle")
             {
-                nlohmann::json out_msg = {
-                    {"manage", "idle"},
+                out_msg = {
+                    {"manage", {
+                        {"state", "idle"}
+                    }}
                 };
                 std::cout << out_msg.dump(4) << "\n\n";
             }
@@ -62,7 +69,6 @@ void manage_vision_data(zmq::socket_t &vision_socket)
         std::string msg = std::string(static_cast<char *>(message.data()), message.size());
         nlohmann::json in_msg = nlohmann::json::parse(msg);
         pipe << msg << "\n";
-        std::cout << in_msg.dump(4) << std::endl;  // Print the received message
     }
 }
 
