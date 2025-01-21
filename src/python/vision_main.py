@@ -12,9 +12,10 @@ class VisionProcessor:
             self.config = yaml.safe_load(config_file)
         
         # Initialize ZMQ communication
-        self.context = zmq.Context()
-        self.telem_socket = self.context.socket(zmq.PUSH)
-        self.cmd_socket = self.context.socket(zmq.PULL)
+        self.telem_context = zmq.Context()
+        self.cmd_context = zmq.Context()
+        self.telem_socket = self.telem_context.socket(zmq.PUSH)
+        self.cmd_socket = self.cmd_context.socket(zmq.PULL)
         self.telem_socket.bind(telem_socket_path)
         self.cmd_socket.connect(cmd_socket_path)
         
@@ -116,7 +117,8 @@ class VisionProcessor:
         cv2.destroyAllWindows()
         self.telem_socket.close()
         self.cmd_socket.close()
-        self.context.term()
+        self.telem_context.term()
+        self.cmd_context.term()
 
     def calibrate(self):
         ret, frame = self.cap.read()
