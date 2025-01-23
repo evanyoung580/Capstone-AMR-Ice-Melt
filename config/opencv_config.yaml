@@ -1,3 +1,33 @@
-{image_proc: {clr_detect: {bgr_targ: [119, 167, 182], hue_tol: 10, sat: {max: 255,
-        min: 30}, val: {max: 255, min: 30}}, crop: {bottom: 1, top: 0.5}, debug: true,
-    rescale: 2}, webcam: {cam_index: 0, fps: 30, size: {height: 480, width: 640}}}
+image_proc:
+  clr_detect:
+    bgr_targ:
+    - 41
+    - 0
+    - 169
+    hue_tol: 10
+    min_area: 40000
+    sat:
+      max: 255
+      min: 30
+    val:
+      max: 255
+      min: 30
+  line_detect:
+    canny:
+      high: 100
+      low: 50
+    hough:
+      thresh: 50
+      max_gap: 10
+      min_len: 100
+  crop:
+    bottom: .9
+    top: 0.4
+  debug: true
+  rescale: 2
+webcam:
+  cam_index: 0
+  fps: 30
+  size:
+    height: 480
+    width: 640

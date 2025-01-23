@@ -69,24 +69,30 @@ class VisionProcessor:
 
     def analyze_contours(self, contours, frame):
         """Analyzes contours to detect and mark the sidewalk."""
+        sw_telem = {
+            "status": "detecting",
+            "sw_detected": "False"
+        }
         if contours:
             largest_contour = max(contours, key=cv2.contourArea)
-            x, y, w, h = cv2.boundingRect(largest_contour)
-            sidewalk_pos = [x + (w // 2), y + (h // 2)]
-            fh, fw, _ = frame.shape
-            sidewalk_targ = [(2 * (sidewalk_pos[0] / fw)) - 1, ((fh - sidewalk_pos[1]) / fh)]
+            sidealk_area = cv2.contourArea(largest_contour)
+            if sidealk_area > self.config['image_proc']['clr_detect']['min_area']:
+                x, y, w, h = cv2.boundingRect(largest_contour)
+                sidewalk_pos = [x + (w // 2), y + (h // 2)]
+                fh, fw, _ = frame.shape
+                sidewalk_targ = [(2 * (sidewalk_pos[0] / fw)) - 1, ((fh - sidewalk_pos[1]) / fh)]
 
-            if self.config['image_proc']['debug']:
-                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                cv2.circle(frame, tuple(sidewalk_pos), 5, (0, 255, 0), -1)
+                if self.config['image_proc']['debug']:
+                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                    cv2.circle(frame, tuple(sidewalk_pos), 5, (0, 255, 0), -1)
 
-            return {
-                "status": "detecting",
-                "sw_detected": "True",
-                "sw_pos": {"x": sidewalk_targ[0], "y": sidewalk_targ[1]}
-            }
-        else:
-            return {"status": "detecting", "sw_detected": "False"}
+                sw_telem = {
+                    "status": "detecting",
+                    "sw_detected": "True",
+                    "sw_pos": {"x": sidewalk_targ[0], "y": sidewalk_targ[1]},
+                    "sw_area": sidealk_area
+                }
+        return sw_telem
 
     def send_message(self, message):
         """Sends a JSON message via the socket."""
@@ -121,6 +127,7 @@ class VisionProcessor:
         self.cmd_context.term()
 
     def calibrate(self):
+        """Calibrates new detection hue value with central camera color."""
         ret, frame = self.cap.read()
         if not ret or frame is None:
             print("Error: Unable to read frame from the webcam.")
@@ -142,7 +149,7 @@ class VisionProcessor:
         self.config['image_proc']['clr_detect']['bgr_targ'] = avr_bgr_list
 
         with open('/home/amrmgr/amr/config/opencv_config.yaml', 'w') as write_file:
-            yaml.safe_dump(self.config, write_file, default_flow_style=True)
+            yaml.safe_dump(self.config, write_file, default_flow_style=False)
 
     def run(self):
         """Main processing loop."""
