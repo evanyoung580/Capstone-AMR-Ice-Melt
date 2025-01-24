@@ -19,4 +19,4 @@ Makefile
 *.tmp
 *.swp
 
-*/.vscode/
+.vscode/

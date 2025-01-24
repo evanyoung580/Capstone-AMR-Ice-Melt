@@ -14,12 +14,15 @@ image_proc:
       min: 30
   line_detect:
     canny:
-      high: 100
-      low: 50
+      high: 150
+      low: 100
     hough:
       thresh: 50
-      max_gap: 10
-      min_len: 100
+      max_gap: 150
+      min_len: 50
+    line:
+      ang_excl: 30
+      x_gap: 50
   crop:
     bottom: .9
     top: 0.4
