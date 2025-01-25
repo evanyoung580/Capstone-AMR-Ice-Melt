@@ -27,24 +27,9 @@ class VisionProcessor:
         
         self.detect = self.config['image_proc']['debug']
 
-    def process_frame(self, frame):
-        """Processes the frame: cropping, resizing, color detection, and contour analysis."""
-        # Crop frame
-        height, width, _ = frame.shape
-        top_crop = int(height * self.config['image_proc']['crop']['top'])
-        bottom_crop = int(height * self.config['image_proc']['crop']['bottom'])
-        cropped_frame = frame[top_crop:bottom_crop, :]
-
-        # Resize frame
-        c_height, c_width, _ = cropped_frame.shape
-        k_rescale = self.config['image_proc']['rescale']
-        resized_frame = cv2.resize(
-            cropped_frame, 
-            (int(c_width * k_rescale), int(c_height * k_rescale))
-        )
-
+    def process_color(self, frame):
         # Convert to HSV
-        hsv_frame = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2HSV)
+        hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
         # Define HSV range for color detection
         sidewalk_bgr = np.uint8([[self.config['image_proc']['clr_detect']['bgr_targ']]])
@@ -65,34 +50,133 @@ class VisionProcessor:
         mask = cv2.inRange(hsv_frame, hsv_min, hsv_max)
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        return resized_frame, hsv_frame, mask, contours
-
-    def analyze_contours(self, contours, frame):
-        """Analyzes contours to detect and mark the sidewalk."""
-        sw_telem = {
-            "status": "detecting",
+        col_telem = {
             "sw_detected": "False"
         }
         if contours:
             largest_contour = max(contours, key=cv2.contourArea)
             sidealk_area = cv2.contourArea(largest_contour)
             if sidealk_area > self.config['image_proc']['clr_detect']['min_area']:
-                x, y, w, h = cv2.boundingRect(largest_contour)
-                sidewalk_pos = [x + (w // 2), y + (h // 2)]
                 fh, fw, _ = frame.shape
-                sidewalk_targ = [(2 * (sidewalk_pos[0] / fw)) - 1, ((fh - sidewalk_pos[1]) / fh)]
+                x, y, w, h = cv2.boundingRect(largest_contour)
+                left_targ = [x / fw, (y + (h // 2)) / fh]
+                right_targ = [(x + w) / fw, (y + (h // 2)) / fh]
+                center_targ = [(x + (w // 2)) / fw, (y + (h // 2)) / fh]
 
                 if self.config['image_proc']['debug']:
                     cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                    cv2.circle(frame, tuple(sidewalk_pos), 5, (0, 255, 0), -1)
+                    cv2.circle(frame, (x + (w // 2), y + (h // 2)), 5, (0, 255, 0), -1)
 
-                sw_telem = {
-                    "status": "detecting",
+                col_telem = {
                     "sw_detected": "True",
-                    "sw_pos": {"x": sidewalk_targ[0], "y": sidewalk_targ[1]},
-                    "sw_area": sidealk_area
+                    "sw_pos": {
+                                "left": {"x": left_targ[0], "y": left_targ[1]},
+                                "center": {"x": center_targ[0], "y": center_targ[1]},
+                                "right": {"x": right_targ[0], "y": right_targ[1]},
+                                "area": sidealk_area
+                            }
                 }
-        return sw_telem
+        return col_telem, frame, mask
+    
+    def make_line_length(self, longest):
+        def line_length(line):
+            x1, y1, x2, y2 = line[0] 
+            angle = np.arctan2(y2 - y1, x2 - x1) * (180 / np.pi)
+            ang_excl = self.config['image_proc']['line_detect']['line']['ang_excl']
+            if ((angle > ang_excl) and (angle < 180 - ang_excl)) or \
+                ((angle < -ang_excl) and (angle > -(180 - ang_excl))):
+                if longest is not None:
+                    x1ll, _, x2ll, _ = longest[0]
+                    x_gap = self.config['image_proc']['line_detect']['line']['x_gap']
+                    x2d = abs(x2-x2ll) > x_gap
+                    x1d = abs(x1-x1ll) > x_gap
+                    if (x2d and x1d):
+                        length = np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+                    else:
+                        length = 0
+                else:
+                    length = np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+            else: 
+                length = 0
+            return length
+        return line_length
+
+    def process_line(self, frame, out_frame):
+        height, width, _ = frame.shape
+        gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        blur_frame = cv2.blur(gray_frame, (5, 5))
+        edge_frame = cv2.Canny(blur_frame, self.config['image_proc']['line_detect']['canny']['low'], 
+                            self.config['image_proc']['line_detect']['canny']['low'])
+        lines = cv2.HoughLinesP(edge_frame, 1, np.pi / 180,
+                                self.config['image_proc']['line_detect']['hough']['thresh'], 
+                                minLineLength=self.config['image_proc']['line_detect']['hough']['min_len'], 
+                                maxLineGap=self.config['image_proc']['line_detect']['hough']['max_gap'])
+        line_telem = {
+            "sw_detected": "False"
+        }
+        if lines is not None:
+            longest = self.make_line_length(None)
+            long_line = max(lines, key=longest)
+            sec_longest = self.make_line_length(long_line)
+            sec_long_line = max(lines, key=sec_longest)
+            long_line_len = longest(long_line)
+            sec_long_line_len = longest(sec_long_line)
+            if (long_line_len > 0) and (sec_long_line_len > 0):
+                x1ll, y1ll, x2ll, y2ll = long_line[0]
+                x1sl, y1sl, x2sl, y2sl = sec_long_line[0]
+                if x1ll < x1sl:
+                    left_line = long_line
+                    right_line = sec_long_line
+                    x1ll, y1ll, x2ll, y2ll = left_line[0]
+                    x1rl, y1rl, x2rl, y2rl = right_line[0]
+                else:
+                    left_line = sec_long_line
+                    right_line = long_line
+                    x1ll, y1ll, x2ll, y2ll = left_line[0]
+                    x1rl, y1rl, x2rl, y2rl = right_line[0]
+
+                left_targ = [((np.average([x1ll, x2ll]) / width)) - 1, ((np.average([y1ll, y2ll])) / height)]
+                right_targ = [((np.average([x1rl, x2rl]) / width)) - 1, ((np.average([y1rl, y2rl])) / height)]
+                center_targ = [np.average([left_targ[0], right_targ[0]]), np.average([left_targ[1], right_targ[1]])]
+
+                cv2.line(out_frame, (x1ll, y1ll), (x2ll, y2ll), (0, 0, 255), 4)
+                cv2.line(out_frame, (x1rl, y1rl), (x2rl, y2rl), (255, 0, 0), 4)
+
+                line_telem = {
+                    "sw_detected": "True",
+                    "sw_pos": {
+                                "left": {"x": left_targ[0], "y": left_targ[1]},
+                                "center": {"x": center_targ[0], "y": center_targ[1]},
+                                "right": {"x": right_targ[0], "y": right_targ[1]}
+                            }
+                }
+        return line_telem, out_frame, edge_frame
+
+    def process_frame(self, frame):
+        """Processes the frame: cropping, resizing, color detection, and contour analysis."""
+        # Crop frame
+        height, width, _ = frame.shape
+        top_crop = int(height * self.config['image_proc']['crop']['top'])
+        bottom_crop = int(height * self.config['image_proc']['crop']['bottom'])
+        cropped_frame = frame[top_crop:bottom_crop, :]
+
+        # Resize frame
+        c_height, c_width, _ = cropped_frame.shape
+        k_rescale = self.config['image_proc']['rescale']
+        resized_frame = cv2.resize(
+            cropped_frame, 
+            (int(c_width * k_rescale), int(c_height * k_rescale))
+        )
+        col_telem, out_frame, col_mask = self.process_color(resized_frame)
+        line_telem, out_frame, line_mask = self.process_line(resized_frame, out_frame)
+
+        if self.config['image_proc']['debug']:
+            cv2.imshow("out_frame", out_frame)
+            cv2.imshow("col_mask", col_mask)
+            cv2.imshow("line_mask", line_mask)
+            cv2.waitKey(1000 // self.config['webcam']['fps'])
+
+        return col_telem, line_telem
 
     def send_message(self, message):
         """Sends a JSON message via the socket."""
@@ -161,16 +245,12 @@ class VisionProcessor:
                         print("Error: Unable to read frame from the webcam.")
                         break
 
-                    resized_frame, hsv_frame, mask, contours = self.process_frame(frame)
-                    out_message = self.analyze_contours(contours, resized_frame)
-                    if self.config['image_proc']['debug']:
-                        cv2.imshow("Original", frame)
-                        cv2.imshow("Cropped", resized_frame)
-                        cv2.imshow("HSV", hsv_frame)
-                        cv2.imshow("Mask", mask)
-
-                    if cv2.waitKey(1000 // self.config['webcam']['fps']) & 0xFF == ord('q'):
-                        break
+                    col_telem, line_telem = self.process_frame(frame)
+                    out_message = {
+                        "status": "detecting",
+                        "color_det": col_telem,
+                        "line_det": line_telem
+                    }
                 else:
                     out_message = {"status": "idle"}
                 self.send_message(out_message)

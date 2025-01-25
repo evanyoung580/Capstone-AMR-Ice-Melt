@@ -82,12 +82,9 @@ if lines is not None:
         center = np.average([left_edge, right_edge])
 
         print(f"Left edge: {left_edge}, Right edge: {right_edge}, Center: {center}")
-            
-    if sec_long_line_len > 0:
-        x1sl, y1sl, x2sl, y2sl = sec_long_line[0]
     
-    cv2.line(resized_image, (x1ll, y1ll), (x2ll, y2ll), (0, 0, 255), 4)
-    cv2.line(resized_image, (x1rl, y1rl), (x2rl, y2rl), (255, 0, 0), 4)
+        cv2.line(resized_image, (x1ll, y1ll), (x2ll, y2ll), (0, 0, 255), 4)
+        cv2.line(resized_image, (x1rl, y1rl), (x2rl, y2rl), (255, 0, 0), 4)
 
 cv2.imshow("original", image)
 cv2.imshow("cropped", resized_image)

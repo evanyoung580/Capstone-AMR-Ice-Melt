@@ -18,14 +18,14 @@ image_proc:
       low: 100
     hough:
       thresh: 50
-      max_gap: 150
+      max_gap: 50
       min_len: 50
     line:
       ang_excl: 30
       x_gap: 50
   crop:
-    bottom: .9
-    top: 0.4
+    bottom: 1
+    top: 0.5
   debug: true
   rescale: 2
 webcam:
