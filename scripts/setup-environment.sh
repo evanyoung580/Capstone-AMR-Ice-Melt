@@ -15,6 +15,14 @@ else
     sudo apt install git -y
 fi
 
+# Install qterminal
+if command_exists qterminal; then
+    echo "qterminal is already installed."
+else
+    echo "Installing qterminal..."
+    sudo apt install qterminal -y
+fi
+
 # Install Python3 and pip
 if command_exists python3; then
     echo "Python3 is already installed."

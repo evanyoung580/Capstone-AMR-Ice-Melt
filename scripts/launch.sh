@@ -3,34 +3,31 @@
 base_station=false
 
 VISION_MAIN="/home/amrmgr/amr/src/python/vision_main.py"
-MSGMGR="/home/amrmgr/amr/test/cpp/build/local_msgmgr"
+CMD_MANAGER="/home/amrmgr/amr/src/cpp//build/cmd_manager"
+TELEM_MANAGER="/home/amrmgr/amr/src/cpp/build/telem_manager"
 
 echo "Starting AMR..."
 
 echo "Starting base station message manager..."
 if $base_station; then
     echo "Base station mode enabled (TBD)."
-else
-    if [[ ! -p data_monitor ]]; then
-        echo "Creating FIFO data_monitor..."
-        mkfifo data_monitor
-    else
-        echo "FIFO data_monitor already exists."
-    fi
-    echo "Opening data monitor terminal..."
-    qterminal --title "Data Monitor" -e bash -c "cat data_monitor; exec bash" &
 fi
 
-echo "Opening base station manager in a new terminal..."
-qterminal --title "Cmd Manager" -e bash -c "$MSGMGR; exec bash" &
+echo "Opening base command manager in a new terminal..."
+qterminal --title "Cmd Manager" -e bash -c "$CMD_MANAGER; exec bash" &
+
+echo "Opening telemetry monitor in a new terminal..."
+qterminal --title "Telem Monitor" -e bash -c "$TELEM_MANAGER; exec bash" &
 
 echo "Starting OpenCV vision..."
 qterminal --title "OpenCV Vision" -e bash -c "python3 $VISION_MAIN; exec bash" &
 
 VISION_PID=$!
-MSGMGR_PID=$(pgrep -f "$MSGMGR")
+CMD_MANAGER_PID=$(pgrep -f "$CMD_MANAGER")
+TELEM_MANAGER_PID=$(pgrep -f "$TELEM_MANAGER")
 
-trap "echo 'Stopping AMR...'; kill $VISION_PID $MSGMGR_PID" SIGINT
+trap "echo 'Stopping AMR...'; kill $VISION_PID $CMD_MANAGER_PID $TELEM_MANAGER_PID" SIGINT
 
 wait
+
 echo "AMR has stopped."

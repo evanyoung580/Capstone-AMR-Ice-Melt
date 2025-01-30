@@ -1,32 +1,33 @@
 image_proc:
   clr_detect:
     bgr_targ:
-    - 41
+    - 23
     - 0
-    - 169
+    - 167
     hue_tol: 10
     min_area: 40000
     sat:
       max: 255
-      min: 30
+      min: 10
     val:
       max: 255
-      min: 30
-  line_detect:
-    canny:
-      high: 150
-      low: 100
-    hough:
-      thresh: 50
-      max_gap: 50
-      min_len: 50
-    line:
-      ang_excl: 30
-      x_gap: 50
+      min: 1
   crop:
     bottom: 1
     top: 0.5
   debug: true
+  line_detect:
+    canny:
+      blur: 10
+      high: 150
+      low: 100
+    hough:
+      max_gap: 50
+      min_len: 50
+      thresh: 50
+    line:
+      ang_excl: 30
+      x_gap: 500
   rescale: 2
 webcam:
   cam_index: 0

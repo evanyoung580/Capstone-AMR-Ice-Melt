@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/telem_manager.dir/telem_manager.cpp.o -o telem_manager  -lzmq 
