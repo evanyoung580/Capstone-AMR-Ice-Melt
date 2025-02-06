@@ -1,6 +1,10 @@
-/build/
-*/CMakeFiles/
-*/CMakeCache.txt
+build/
+cmke-build-*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+*.cmake
 
 *.o
 *.obj
@@ -12,11 +16,8 @@
 *.ld
 *.map
 
-Makefile
-*.cmake
-
 *.log
-*.tmp
+*~
 *.swp
 
 .vscode/
