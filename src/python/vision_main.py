@@ -247,7 +247,7 @@ class VisionProcessor:
             while True:
                 if self.detect:
                     ret, raw_frame = self.cap.read()
-                    if not ret or frame is None:
+                    if not ret or raw_frame is None:
                         print("Error: Unable to read frame from the webcam.")
                         break
                     
