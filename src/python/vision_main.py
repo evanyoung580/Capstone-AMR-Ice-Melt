@@ -3,6 +3,7 @@ import numpy as np
 import yaml
 import zmq
 import time
+from Integrated_Object_Detection import object_detection
 
 
 class VisionProcessor:
@@ -203,6 +204,7 @@ class VisionProcessor:
         self.cmd_socket.close()
         self.telem_context.term()
         self.cmd_context.term()
+    
 
     def calibrate(self):
         """Calibrates new detection hue value with central camera color."""
@@ -228,21 +230,34 @@ class VisionProcessor:
 
         with open('/home/amrmgr/amr/config/opencv_config.yaml', 'w') as write_file:
             yaml.safe_dump(self.config, write_file, default_flow_style=False)
+            
+    def run(self):
+        while True:
+            ret, frame = self.cap.read()
+            if not ret:
+                continue
 
+            if self.detect_scene_change(frame):
+                print("Recalibrating.")
+                self.calibrate()
+                
     def run(self):
         """Main processing loop."""
         try:
             while True:
                 if self.detect:
-                    ret, frame = self.cap.read()
+                    ret, raw_frame = self.cap.read()
                     if not ret or frame is None:
                         print("Error: Unable to read frame from the webcam.")
                         break
+                    
+                    targets = object_detection(raw_frame)
+                    cv2.imshow("20 points", targets)
+            
 
-                    resized_frame = self.process_frame(frame)
-                    out_frame = self.process_frame(frame)
-                    col_telem, out_frame, col_mask = self.process_color(resized_frame, out_frame)
-                    line_telem, out_frame, line_mask = self.process_line(resized_frame, out_frame)
+                    frame = self.process_frame(raw_frame)
+                    col_telem, out_frame, col_mask = self.process_color(frame)
+                    line_telem, out_frame, line_mask = self.process_line(frame)
 
                     if self.config['image_proc']['debug']:
                         cv2.imshow("out_frame", out_frame)
@@ -258,7 +273,7 @@ class VisionProcessor:
                 else:
                     out_message = {"status": "idle"}
                 self.send_message(out_message)
-                self.receive_message()
+                #self.receive_message()
             self.send_message({"status": "stopped"})
 
         finally:
