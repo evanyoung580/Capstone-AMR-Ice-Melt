@@ -205,7 +205,22 @@ class VisionProcessor:
         self.telem_context.term()
         self.cmd_context.term()
     
+    def detect_scene_change(self, frame, threshold=30):
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        orb = cv2.ORB_create()
+        kp, des = orb.detectAndCompute(gray, None)
 
+        if not hasattr(self, 'prev_des'):
+            self.prev_des = des
+            return False
+
+        bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+        matches = bf.match(self.prev_des, des)
+        self.prev_des = des
+
+        if len(matches) < threshold:
+            return True
+        return False
     def calibrate(self):
         """Calibrates new detection hue value with central camera color."""
         ret, frame = self.cap.read()
