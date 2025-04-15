@@ -4,7 +4,7 @@ from ultralytics import YOLO
 model = YOLO('yolov8n.pt')
 
 def object_detection(frame):
-    annotated_frame = frame.copy()
+    # annotated_frame = frame.copy()
     # Load the pre-trained YOLOv8 model
    
 
@@ -29,9 +29,9 @@ def object_detection(frame):
             
         #Draw a box if it is a person or within the obstcle classes 
         if label == 'person' or label in obstacle_classes:
-            cv2.rectangle(annotated_frame, (x1, y1), (x2, y2), color, 2)
-            cv2.putText(annotated_frame, f"{label} {conf:.2f}", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+            cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+            cv2.putText(frame, f"{label} {conf:.2f}", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
 
         #cv2.imshow("Object Detection", frame)
         #cv2.imshow("Object Detection", annotated_frame)
-        return annotated_frame
+        return frame

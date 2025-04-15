@@ -28,7 +28,7 @@ class VisionProcessor:
         
         self.detect = self.config['image_proc']['debug']
 
-    def process_color(self, frame, out_frame):
+    def process_color(self, frame):
         # Convert to HSV
         hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
@@ -63,8 +63,8 @@ class VisionProcessor:
                 center_targ = [(x + (w // 2)) / fw, (y + (h // 2)) / fh]
 
                 if self.config['image_proc']['debug']:
-                    cv2.rectangle(out_frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                    cv2.circle(out_frame, (x + (w // 2), y + (h // 2)), 5, (0, 255, 0), -1)
+                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                    cv2.circle(frame, (x + (w // 2), y + (h // 2)), 5, (0, 255, 0), -1)
 
                 telem = {
                     "sw_detected": "True",
@@ -76,7 +76,7 @@ class VisionProcessor:
                         "area": sidealk_area
                     }
                 }
-        return telem, out_frame, mask
+        return telem, frame, mask
     
     def make_line_length(self, longest):
         def line_length(line):
@@ -103,7 +103,7 @@ class VisionProcessor:
             return length
         return line_length
 
-    def process_line(self, frame, out_frame):
+    def process_line(self, frame):
         height, width, _ = frame.shape
         gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         blur_matrix = self.config['image_proc']['line_detect']['canny']['blur']
@@ -141,8 +141,8 @@ class VisionProcessor:
                 center_targ = [np.average([left_targ[0], right_targ[0]]), np.average([left_targ[1], right_targ[1]])]
 
                 if self.config['image_proc']['debug']:
-                    cv2.line(out_frame, (x1ll, y1ll), (x2ll, y2ll), (0, 0, 255), 4)
-                    cv2.line(out_frame, (x1rl, y1rl), (x2rl, y2rl), (255, 0, 0), 4)
+                    cv2.line(frame, (x1ll, y1ll), (x2ll, y2ll), (0, 0, 255), 4)
+                    cv2.line(frame, (x1rl, y1rl), (x2rl, y2rl), (255, 0, 0), 4)
 
                 telem = {
                     "sw_detected": "True",
@@ -153,7 +153,7 @@ class VisionProcessor:
                         "right": {"x": float(right_targ[0]), "y": float(right_targ[1])}
                     }
                 }
-        return telem, out_frame, edge_frame
+        return telem, frame, edge_frame
 
     def process_frame(self, frame):
         """Processes the frame: cropping, resizing, color detection, and contour analysis."""
@@ -231,15 +231,6 @@ class VisionProcessor:
         with open('/home/amrmgr/amr/config/opencv_config.yaml', 'w') as write_file:
             yaml.safe_dump(self.config, write_file, default_flow_style=False)
             
-    def run(self):
-        while True:
-            ret, frame = self.cap.read()
-            if not ret:
-                continue
-
-            if self.detect_scene_change(frame):
-                print("Recalibrating.")
-                self.calibrate()
                 
     def run(self):
         """Main processing loop."""
@@ -250,9 +241,13 @@ class VisionProcessor:
                     if not ret or raw_frame is None:
                         print("Error: Unable to read frame from the webcam.")
                         break
+                        
+                    if self.detect_scene_change(frame):
+                    	print("Recalibrating.")
+                    	self.calibrate()
                     
-                    targets = object_detection(raw_frame)
-                    cv2.imshow("20 points", targets)
+                    # targets = object_detection(raw_frame)
+                    # cv2.imshow("20 points", targets)
             
 
                     frame = self.process_frame(raw_frame)
@@ -272,9 +267,9 @@ class VisionProcessor:
                     }
                 else:
                     out_message = {"status": "idle"}
-                self.send_message(out_message)
-                #self.receive_message()
-            self.send_message({"status": "stopped"})
+                # self.send_message(out_message)
+                # self.receive_message()
+            # self.send_message({"status": "stopped"})
 
         finally:
             self.cleanup()
