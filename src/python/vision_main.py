@@ -5,6 +5,12 @@ import zmq
 import time
 from Integrated_Object_Detection import object_detection
 
+#Checking for camera indexes
+#for i in range(5):
+	#cap = cv2.VideoCapture(i)
+	#if cap.isOpened():
+		#print(f"Camera found at index {i}")
+		#cap.release()
 
 class VisionProcessor:
     def __init__(self, config_path, telem_socket_path, cmd_socket_path):
@@ -22,9 +28,15 @@ class VisionProcessor:
         
         # Initialize webcam
         webcam_index = self.config['webcam']['cam_index']
+        webcam_index1 = self.config['webcam']['cam_index1']
         self.cap = cv2.VideoCapture(webcam_index)
+        self.obs = cv2.VideoCapture(webcam_index1)
+        
         if not self.cap.isOpened():
             raise RuntimeError(f"Error: Unable to access the webcam at index {webcam_index}.")
+            
+        if not self.obs.isOpened():
+           	raise RuntimeError(f"Error: Unable to access the webcam at index {webcam_index1}.")
         
         self.detect = self.config['image_proc']['debug']
 
@@ -253,19 +265,27 @@ class VisionProcessor:
             while True:
                 if self.detect:
                     ret, raw_frame = self.cap.read()
+                    bet, paw_frame = self.obs.read()
+                    
                     if not ret or raw_frame is None:
                         print("Error: Unable to read frame from the webcam.")
                         break
                         
-                    if self.detect_scene_change(frame):
-                    	print("Recalibrating.")
-                    	self.calibrate()
-                    
-                    # targets = object_detection(raw_frame)
-                    # cv2.imshow("20 points", targets)
-            
+                    if not bet or paw_frame is None:
+                        print("Error: Unable to read frame from the webcam. 1")
+                        break
 
-                    frame = self.process_frame(raw_frame)
+                    raw_frame = self.process_frame(raw_frame)
+                    targets, person_detected = object_detection(raw_frame)
+                    cv2.imshow("20 pts", targets)
+                    if person_detected:
+                    	print("eliminate") # take action appropriately
+                        
+                    # work in progress
+                    #if self.detect_scene_change(raw_frame):
+                    #	print("Recalibrating.")
+                    #	self.calibrate()
+                    frame = self.process_frame(paw_frame)
                     col_telem, out_frame, col_mask = self.process_color(frame)
                     line_telem, out_frame, line_mask = self.process_line(frame)
 

@@ -3,6 +3,7 @@ from ultralytics import YOLO
 
 model = YOLO('yolov8n.pt')
 
+
 def object_detection(frame):
     # annotated_frame = frame.copy()
     # Load the pre-trained YOLOv8 model
@@ -10,6 +11,7 @@ def object_detection(frame):
 
     # List of labels considered obstacles (can adjust based on your environment)
     obstacle_classes = ['car', 'truck', 'deer', 'dog', 'birds', 'cell phone']
+    person_detected = False
     
     results = model(frame, verbose = False)[0]
 
@@ -31,7 +33,10 @@ def object_detection(frame):
         if label == 'person' or label in obstacle_classes:
             cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
             cv2.putText(frame, f"{label} {conf:.2f}", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+            person_detected = True
+        else: 
+        	person_detected = False
 
         #cv2.imshow("Object Detection", frame)
         #cv2.imshow("Object Detection", annotated_frame)
-        return frame
+    return frame, person_detected

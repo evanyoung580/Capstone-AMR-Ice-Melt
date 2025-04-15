@@ -1,9 +1,9 @@
 image_proc:
   clr_detect:
     bgr_targ:
-    - 23
-    - 0
-    - 167
+    - 183
+    - 180
+    - 181
     hue_tol: 10
     min_area: 40000
     sat:
@@ -31,7 +31,7 @@ image_proc:
   rescale: 2
 webcam:
   cam_index: 0
-  cam_index1: 1
+  cam_index1: 2
   fps: 30
   size:
     height: 480
