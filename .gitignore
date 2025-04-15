@@ -21,3 +21,7 @@ Makefile
 *.swp
 
 .vscode/
+
+yolo-env/
+src/python/__pycache__
+yolov8n.pt
