@@ -185,9 +185,9 @@ class VisionProcessor:
         """Receives a JSON message from the socket and updates detection status."""
         if self.cmd_socket.poll(timeout=10):
             in_message = self.cmd_socket.recv_json(flags=zmq.NOBLOCK)
-            if in_message['manage']['state'] == "detect":
+            if in_message['state'] == "detect":
                 self.detect = True
-            elif in_message['manage']['state'] == "calibrate":
+            elif in_message['state'] == "calibrate":
                 self.detect = False
                 self.send_message({"status": "calibrating"})
                 self.calibrate()

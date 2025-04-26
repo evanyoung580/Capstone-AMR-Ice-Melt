@@ -1,4 +1,0 @@
-/home/amrmgr/amr/src/cpp/build/CMakeFiles/cmd_manager.dir
-/home/amrmgr/amr/src/cpp/build/CMakeFiles/telem_manager.dir
-/home/amrmgr/amr/src/cpp/build/CMakeFiles/edit_cache.dir
-/home/amrmgr/amr/src/cpp/build/CMakeFiles/rebuild_cache.dir

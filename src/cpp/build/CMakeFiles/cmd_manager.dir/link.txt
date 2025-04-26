@@ -1,1 +1,0 @@
-/usr/bin/c++ CMakeFiles/cmd_manager.dir/cmd_manager.cpp.o -o cmd_manager  -lzmq 

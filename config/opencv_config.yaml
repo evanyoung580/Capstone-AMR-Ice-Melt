@@ -1,9 +1,9 @@
 image_proc:
   clr_detect:
     bgr_targ:
-    - 23
-    - 0
-    - 167
+    - 117
+    - 97
+    - 207
     hue_tol: 10
     min_area: 40000
     sat:
@@ -15,7 +15,7 @@ image_proc:
   crop:
     bottom: 1
     top: 0.5
-  debug: true
+  debug: false
   line_detect:
     canny:
       blur: 10

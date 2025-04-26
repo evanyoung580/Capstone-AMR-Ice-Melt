@@ -1,0 +1,19 @@
+serial:
+  mcu_port: "/dev/ttyUSB1"     # MCU ↔ velocity & telemetry
+  radio_port: "/dev/ttyUSB0"   # LoRa radio ↔ commands & telemetry
+  baud: 115200
+
+zmq:
+  telemetry_sub: "ipc:///home/amrmgr/amr/tmp/vision_telem"
+  commands_pub:  "ipc:///home/amrmgr/amr/tmp/vision_cmd"
+
+pid:
+  kp: 1.0
+  ki: 0.0
+  kd: 0.0
+
+control:
+  target_center:        0.0
+  translation_velocity: 0.5
+  disk_velocity:        3.0
+  period_ms:            50
